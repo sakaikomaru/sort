@@ -1,0 +1,25 @@
+name: sort
+
+dependencies:
+  - base >= 4.7 && < 5
+  - array
+  - bytestring
+  - containers
+  - deepseq
+  - integer-gmp
+  - mtl
+  - stm
+  - text
+  - time
+  - transformers
+  - vector
+
+library:
+  source-dirs:
+    - lib
+
+executables:
+  sort:
+    main: Main.hs
+    dependencies:
+      - sort
