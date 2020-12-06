@@ -145,44 +145,52 @@ inplaceHeapSortBy cmp vec = do
 -- for
 -------------------------------------------------------------------------------
 rep :: Monad m => Int -> (Int -> m ()) -> m ()
-rep n = flip VFSM.mapM_ (streamG 0 (n - 1) const 0 (+) 1)
+rep n = flip VFSM.mapM_ (stream 0 n)
 {-# INLINE rep #-}
 
 rep' :: Monad m => Int -> (Int -> m ()) -> m ()
-rep' n = flip VFSM.mapM_ (streamG 0 n const 0 (+) 1)
+rep' n = flip VFSM.mapM_ (stream 0 (n + 1))
 {-# INLINE rep' #-}
 
 rep1 :: Monad m => Int -> (Int -> m ()) -> m ()
-rep1 n = flip VFSM.mapM_ (streamG 1 (n - 1) const 0 (+) 1)
+rep1 n = flip VFSM.mapM_ (stream 1 n)
 {-# INLINE rep1 #-}
 
 rep1' :: Monad m => Int -> (Int -> m ()) -> m ()
-rep1' n = flip VFSM.mapM_ (streamG 1 n const 0 (+) 1)
+rep1' n = flip VFSM.mapM_ (stream 1 (n + 1))
 {-# INLINE rep1' #-}
 
 rev :: Monad m => Int -> (Int -> m ()) -> m ()
-rev n = flip VFSM.mapM_ (streamRG (n - 1) 0 const 0 (-) 1)
+rev n = flip VFSM.mapM_ (streamR 0 n)
 {-# INLINE rev #-}
 
 rev' :: Monad m => Int -> (Int -> m ()) -> m ()
-rev' n = flip VFSM.mapM_ (streamRG n 0 const 0 (-) 1)
+rev' n = flip VFSM.mapM_ (streamR 0 (n + 1))
 {-# INLINE rev' #-}
 
 rev1 :: Monad m => Int -> (Int -> m ()) -> m ()
-rev1 n = flip VFSM.mapM_ (streamRG (n - 1) 1 const 0 (-) 1)
+rev1 n = flip VFSM.mapM_ (streamR 1 n)
 {-# INLINE rev1 #-}
 
 rev1' :: Monad m => Int -> (Int -> m ()) -> m ()
-rev1' n = flip VFSM.mapM_ (streamRG n 1 const 0 (-) 1)
+rev1' n = flip VFSM.mapM_ (streamR 1 (n + 1))
 {-# INLINE rev1' #-}
 
 range :: Monad m => Int -> Int -> (Int -> m ()) -> m ()
-range l r = flip VFSM.mapM_ (streamG l r const 0 (+) 1)
+range l r = flip VFSM.mapM_ (stream l (r + 1))
 {-# INLINE range #-}
 
 rangeR :: Monad m => Int -> Int -> (Int -> m ()) -> m ()
-rangeR r l = flip VFSM.mapM_ (streamRG r l const 0 (-) 1)
+rangeR r l = flip VFSM.mapM_ (streamR l (r + 1))
 {-# INLINE rangeR #-}
+
+forStep :: Monad m => Int -> Int -> Int -> (Int -> m ()) -> m ()
+forStep l r d = flip VFSM.mapM_ (streamStep l r d)
+{-# INLINE forStep #-}
+
+forStepR :: Monad m => Int -> Int -> Int -> (Int -> m ()) -> m ()
+forStepR r l d = flip VFSM.mapM_ (streamStepR l r d)
+{-# INLINE forStepR #-}
 
 forP :: Monad m => Int -> (Int -> m ()) -> m ()
 forP p = flip VFSM.mapM_ (streamG 2 p (^) 2 (+) 1)
@@ -195,6 +203,42 @@ forG l r f p g d = flip VFSM.mapM_ (streamG l r f p g d)
 forRG :: Monad m => Int -> Int -> (Int -> Int -> Int) -> Int -> (Int -> Int -> Int) -> Int -> (Int -> m ()) -> m ()
 forRG r l f p g d = flip VFSM.mapM_ (streamRG r l f p g d)
 {-# INLINE forRG #-}
+
+stream :: Monad m => Int -> Int -> VFSM.Stream m Int
+stream !l !r = VFSM.Stream step l
+  where
+    step x
+      | x < r     = return $ VFSM.Yield x (x + 1)
+      | otherwise = return VFSM.Done
+    {-# INLINE [0] step #-}
+{-# INLINE [1] stream #-}
+
+streamR :: Monad m => Int -> Int -> VFSM.Stream m Int
+streamR !l !r = VFSM.Stream step (r - 1)
+  where
+    step x
+      | x >= l = return $ VFSM.Yield x (x - 1)
+      | otherwise = return VFSM.Done
+    {-# INLINE [0] step #-}
+{-# INLINE [1] streamR #-}
+
+streamStep :: Monad m => Int -> Int -> Int -> VFSM.Stream m Int
+streamStep !l !r !d = VFSM.Stream step l
+  where
+    step x
+      | x <= r    = return $ VFSM.Yield x (x + d)
+      | otherwise = return VFSM.Done
+    {-# INLINE [0] step #-}
+{-# INLINE [1] streamStep #-}
+
+streamStepR :: Monad m => Int -> Int -> Int -> VFSM.Stream m Int
+streamStepR !l !r !d = VFSM.Stream step r
+  where
+    step x
+      | x >= l    = return $ VFSM.Yield x (x - d)
+      | otherwise = return VFSM.Done
+    {-# INLINE [0] step #-}
+{-# INLINE [1] streamStepR #-}
 
 streamG :: Monad m => Int -> Int -> (Int -> Int -> Int) -> Int -> (Int -> Int -> Int) -> Int -> VFSM.Stream m Int
 streamG !l !r !f !p !g !d = VFSM.Stream step l
